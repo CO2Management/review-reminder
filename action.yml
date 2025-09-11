@@ -1,0 +1,35 @@
+name: 'Review reminder'
+description: 'Send reminders through GitHub Actions to the reviewers and assignee after a given time frame.'
+author: 'Peter van der Veeken'
+inputs:
+  github_token:
+    required: true
+    description: 'GitHub token'
+  reminder_message:
+    required: true
+    description: 'Messages to send to reviewers on Github.'
+  review_turnaround_hours:
+    required: true
+    description: 'This is the deadline to review. If this time is exceeded, a reminder will be sent.'
+  process_reminder_message:
+    required: true
+    description: 'Message to send to assignee on GitHub to process the review feedback.'
+  process_review_turnaround_hours:
+    required: true
+    description: 'This is the deadline for processing the review feedback.'
+  github_repository:
+    required: true
+    description: 'The owner/repo name, e.g. CO2Management/co2m'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    REMINDER_MESSAGE: ${{ inputs.reminder_message }}
+    REVIEW_TURNAROUND_HOURS: ${{ inputs.review_turnaround_hours }}
+    PROCESS_REMINDER_MESSAGE: ${{ inputs.process_reminder_message }}
+    PROCESS_REVIEW_TURNAROUND_HOURS: ${{ inputs.process_review_turnaround_hours }}
+    GITHUB_REPOSITORY: ${{ inputs.github_repository }}
+branding:
+  icon: 'git-pull-request'
+  color: 'gray-dark'
