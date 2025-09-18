@@ -7,24 +7,25 @@ REMINDER_MESSAGE = ENV['REMINDER_MESSAGE']
 REVIEW_TURNAROUND_HOURS = ENV['REVIEW_TURNAROUND_HOURS']
 PROCESS_REMINDER_MESSAGE = ENV['PROCESS_REMINDER_MESSAGE']
 PROCESS_REVIEW_TURNAROUND_HOURS = ENV['PROCESS_REVIEW_TURNAROUND_HOURS']
+REPO = ENV['GITHUB_REPOSITORY']
 
 client = Octokit::Client.new(access_token: GITHUB_TOKEN, per_page: 100)
-repo = ENV['GITHUB_REPOSITORY']
 
 begin
-  pull_requests = client.pull_requests(repo, state: 'open')
+  pull_requests = client.pull_requests(REPO, state: 'open')
 
   pull_requests.each do |pr|
     puts "pr #{pr.number}, title: #{pr.title}"
 
     # Get timeline events and reviews
-    timeline = client.get("/repos/#{repo}/issues/#{pr.number}/timeline", per_page: 100)
+    timeline = client.get("/repos/#{REPO}/issues/#{pr.number}/timeline", per_page: 100)
     review_requested_events = timeline.select { |e| e[:event] == 'review_requested' }
-    reviews = client.pull_request_reviews(repo, pr.number)
-    comments = client.issue_comments(repo, pr.number)
+    reviews = client.pull_request_reviews(REPO, pr.number)
+    comments = client.issue_comments(REPO, pr.number)
     current_time = Time.now
+    requested_reviewers = pr.requested_reviewers.map { |rr| rr[:login] }
 
-    if review_requested_events.empty? || pr.requested_reviewers.empty?
+    if review_requested_events.empty? || requested_reviewers.empty?
       puts "No pending reviews for PR ##{pr.number}."
     else
       # Check when the last review has been requested
@@ -36,14 +37,13 @@ begin
       puts "reviewByTime: #{review_by_time.to_s}"
 
       if current_time >= review_by_time
-        reviewers = pr.requested_reviewers.map { |rr| "@#{rr[:login]}" }.join(', ')
+        reviewers = requested_reviewers.map { |rr| "@#{rr}" }.join(', ')
         add_reminder_comment = "#{reviewers} \n#{REMINDER_MESSAGE}"
-        has_reminder_comment = comments.any? { |c| c[:body].include?(REMINDER_MESSAGE) }
 
-        if has_reminder_comment
+        if comments.any? { |c| c[:body].include?(REMINDER_MESSAGE) }
           puts "Reminder comment already exists for PR ##{pr.number}."
         else
-          client.add_comment(repo, pr.number, add_reminder_comment)
+          client.add_comment(REPO, pr.number, add_reminder_comment)
           puts "comment created: #{add_reminder_comment}"
         end
       else
@@ -53,8 +53,7 @@ begin
 
     # Loop through reviews grouped by [:user][:login] and see if any within a group has the last with state 'CHANGES_REQUESTED'
     # If that is the case, send a message to the PR author with PROCESS_REMINDER_MESSAGE if the review_by_time based on PROCESS_REVIEW_TURNAROUND_HOURS has passed
-    reviews_grouped_by_user = reviews.group_by { |r| r[:user][:login] }
-    reviews_grouped_by_user.each do |user, user_reviews|
+    reviews.group_by { |r| r[:user][:login] }.each do |user, user_reviews|
       last_review = user_reviews.max_by { |r| r[:submitted_at] }
       next unless last_review[:state] == 'CHANGES_REQUESTED'
 
@@ -68,12 +67,11 @@ begin
       if current_time >= process_review_by_time
         pr_author = "@#{pr.user[:login]}"
         add_process_reminder_comment = "#{pr_author} \n#{PROCESS_REMINDER_MESSAGE}"
-        has_process_reminder_comment = comments.any? { |c| c[:body].include?(PROCESS_REMINDER_MESSAGE) }
 
-        if has_process_reminder_comment
+        if comments.any? { |c| c[:body].include?(PROCESS_REMINDER_MESSAGE) }
           puts "Process reminder comment already exists for PR ##{pr.number}."
         else
-          client.add_comment(repo, pr.number, add_process_reminder_comment)
+          client.add_comment(REPO, pr.number, add_process_reminder_comment)
           puts "Process reminder comment created: #{add_process_reminder_comment}"
         end
       else
