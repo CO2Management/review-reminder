@@ -27,4 +27,4 @@ jobs:
           review_turnaround_hours: 72 # Required. This is the deadline for reviews. If this time is exceeded, a reminder wil be send.
           process_reminder_message: 'A week has passed since changes were requested. Please give priority to processing the feedback.' # Required
           process_review_turnaround_hours: 168 # Required
-          
+```
