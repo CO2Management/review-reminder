@@ -2,6 +2,20 @@
 require 'octokit'
 require 'time'
 
+# Helper method to add hours on business days (excluding weekends) to a given time
+def add_business_day_hours(start_time, hours)
+  time = start_time.dup
+  
+  hours.times do
+    time += 3600  # Add one hour
+    # Skip weekends
+    time += 1 * 24 * 3600 if time.wday == 0  # Skip Sunday -> Monday
+    time += 2 * 24 * 3600 if time.wday == 6  # Skip Saturday -> Sunday -> Monday
+  end
+  
+  time
+end
+
 GITHUB_TOKEN = ENV['GITHUB_TOKEN']
 REMINDER_MESSAGE = ENV['REMINDER_MESSAGE']
 REVIEW_TURNAROUND_HOURS = ENV['REVIEW_TURNAROUND_HOURS']
@@ -31,7 +45,7 @@ begin
       # Check when the last review has been requested
       created_at_value = review_requested_events.last[:created_at]
       pull_request_created_at = created_at_value.is_a?(Time) ? created_at_value : Time.parse(created_at_value)
-      review_by_time = pull_request_created_at + (REVIEW_TURNAROUND_HOURS.to_i * 3600)
+      review_by_time = add_business_day_hours(pull_request_created_at, REVIEW_TURNAROUND_HOURS.to_i)
 
       puts "currentTime: #{current_time.to_s}"
       puts "reviewByTime: #{review_by_time.to_s}"
@@ -59,7 +73,7 @@ begin
 
       changes_requested_at_value = last_review[:submitted_at]
       changes_requested_at = changes_requested_at_value.is_a?(Time) ? changes_requested_at_value : Time.parse(changes_requested_at_value)
-      process_review_by_time = changes_requested_at + (PROCESS_REVIEW_TURNAROUND_HOURS.to_i * 3600)
+      process_review_by_time = add_business_day_hours(changes_requested_at, PROCESS_REVIEW_TURNAROUND_HOURS.to_i)
 
       puts "currentTime: #{current_time.to_s}"
       puts "processReviewByTime: #{process_review_by_time.to_s}"
