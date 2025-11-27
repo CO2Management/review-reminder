@@ -73,6 +73,21 @@ begin
 
       changes_requested_at_value = last_review[:submitted_at]
       changes_requested_at = changes_requested_at_value.is_a?(Time) ? changes_requested_at_value : Time.parse(changes_requested_at_value)
+
+      # Check if this reviewer has been re-requested for review after their last CHANGES_REQUESTED review
+      reviewer_re_requested_events = timeline.select do |e|
+        e[:event] == 'review_requested' && 
+        e[:requested_reviewer] && 
+        e[:requested_reviewer][:login] == user &&
+        Time.parse(e[:created_at]) > changes_requested_at
+      end
+
+      # Skip if reviewer has been re-requested for review (they have a new pending review)
+      if !reviewer_re_requested_events.empty?
+        puts "Reviewer #{user} has been re-requested for review after changes requested, skipping process reminder for PR ##{pr.number}."
+        next
+      end
+
       process_review_by_time = add_business_day_hours(changes_requested_at, PROCESS_REVIEW_TURNAROUND_HOURS.to_i)
 
       puts "currentTime: #{current_time.to_s}"
