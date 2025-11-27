@@ -52,13 +52,13 @@ begin
 
       if current_time >= review_by_time
         reviewers = requested_reviewers.map { |rr| "@#{rr}" }.join(', ')
-        add_reminder_comment = "#{reviewers} \n#{REMINDER_MESSAGE}"
+        reminder_comment = "#{reviewers} \n#{REMINDER_MESSAGE}"
 
-        if comments.any? { |c| c[:body].include?(REMINDER_MESSAGE) }
+        if comments.any? { |c| c[:body].include?(reminder_comment) }
           puts "Reminder comment already exists for PR ##{pr.number}."
         else
-          client.add_comment(REPO, pr.number, add_reminder_comment)
-          puts "comment created: #{add_reminder_comment}"
+          client.add_comment(REPO, pr.number, reminder_comment)
+          puts "comment created: #{reminder_comment}"
         end
       else
         puts "No reminders to send for PR ##{pr.number}."
@@ -80,13 +80,13 @@ begin
 
       if current_time >= process_review_by_time
         pr_author = "@#{pr.user[:login]}"
-        add_process_reminder_comment = "#{pr_author} \n#{PROCESS_REMINDER_MESSAGE}"
+        process_reminder_comment = "#{pr_author} \n#{PROCESS_REMINDER_MESSAGE}"
 
-        if comments.any? { |c| c[:body].include?(PROCESS_REMINDER_MESSAGE) }
+        if comments.any? { |c| c[:body].include?(process_reminder_comment) }
           puts "Process reminder comment already exists for PR ##{pr.number}."
         else
-          client.add_comment(REPO, pr.number, add_process_reminder_comment)
-          puts "Process reminder comment created: #{add_process_reminder_comment}"
+          client.add_comment(REPO, pr.number, process_reminder_comment)
+          puts "Process reminder comment created: #{process_reminder_comment}"
         end
       else
         puts "No process reminders to send for PR ##{pr.number}."
