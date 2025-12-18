@@ -72,6 +72,7 @@ end
 
 validate_environment!
 client = Octokit::Client.new(access_token: GITHUB_TOKEN, per_page: API_PER_PAGE)
+client.auto_paginate = true
 
 # Send reviewer reminders for overdue reviews
 def send_reviewer_reminders(client, repo, pr, timeline, comments, current_time)
